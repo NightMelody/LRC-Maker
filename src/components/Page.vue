@@ -253,7 +253,6 @@ function buildLrc(): string {
         }
     }
 
-    // Líneas de letra
     markers.value.forEach(m => {
         out += `[${formatTime(m.time)}]${m.label}\n`;
     });
@@ -273,7 +272,7 @@ function buildLrc(): string {
                 <li class="separator"></li>
                 <li><button @click="openAudioFile">Load audio</button></li>
                 <!-- <li><button>Properties</button></li> -->
-                <!-- <li><button @click="stopApp">Exit</button></li>   uhm... qué se le hará-->
+                <!-- <li><button @click="stopApp">Exit</button></li> -->
             </ul>
         </div>
 

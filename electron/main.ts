@@ -128,11 +128,10 @@ ipcMain.handle('read-audio-buffer', async (event, filePath) => {
   }
 })
 
-// .lrc file
+
 ipcMain.handle('read-lyrics-file', async (event, filePath) => {
   try {
     const content = await fs.readFile(filePath, {encoding: 'utf8'})
-    //console.log(':> l' $[filePath])
     return {success: true, content: content}
 
   } catch (error) {

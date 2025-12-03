@@ -21,7 +21,7 @@ Also, this project will NOT accept contributions until first Beta version be rel
 ### Requirements
 
 - A desktop computer running Windows, MacOS or Linux.
-- Have Node.js installed.
+- Have [Node.js](https://nodejs.org/) installed.
 - An IDE of your choice, for example: [Visual Studio Code](https://code.visualstudio.com/).
 
 

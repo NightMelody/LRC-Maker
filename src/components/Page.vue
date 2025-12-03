@@ -144,11 +144,9 @@ async function openAudioFile() {
     const filePaths = await api.openFile(audioFilter)
 
     if (!filePaths || filePaths.length === 0) {
-        console.log('Load1112')
         return
     }
 
-    console.log('Load132')
     const audioPath = filePaths[0]
 
     const result = await api.readAudioBuffer(audioPath)
@@ -158,15 +156,12 @@ async function openAudioFile() {
         const audioBlob = new Blob([result.buffer], {type: 'audio/mp3'})
 
         wavesurferIntance.loadBlob(audioBlob)
-        console.log('12wqewq')
         //= audioPath
-    } else {
-        alert('Error at load audio file' + result.error)
     }
 }
 
 async function saveLyricsFile() {
-const filePath = await api.saveFile("lyrics.lrc", [
+    const filePath = await api.saveFile("lyrics.lrc", [
         { name: "Lyrics File", extensions: ["lrc"] }
     ])
 
@@ -174,14 +169,7 @@ const filePath = await api.saveFile("lyrics.lrc", [
 
     const lrcText = buildLrc()
 
-    console.log("Saving:", filePath)
-    console.log("LRC CONTENT:\n", lrcText)
-
     const result = await api.saveLyricsFile(filePath, lrcText)
-
-    if (!result.success) {
-        alert("Error al guardar: " + result.error)
-    }
 }
 
 

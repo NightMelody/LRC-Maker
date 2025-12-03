@@ -119,11 +119,10 @@ ipcMain.handle('read-audio-buffer', async (event, filePath) => {
 
     const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
 
-    console.log('13weqdsa')
+
 
     return {success: true, buffer: arrayBuffer}
   } catch (error) {
-    console.error('Error at audio read', error)
     return {success: false, error: error.message}
   }
 })

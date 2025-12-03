@@ -46,6 +46,7 @@ npm run dev
 
 To build the app:
 ```bash
+# Not tested
 npm run build
 ```
 

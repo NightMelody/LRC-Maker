@@ -38,6 +38,7 @@ To run the app in dev mode:
 ```bash
 # If is the first time
 npm install
+npm install --save @meersagor/wavesurfer-vue
 
 # Run in dev mode
 npm run dev

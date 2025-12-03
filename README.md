@@ -50,9 +50,9 @@ npm run build
 
 ## RoadMap
 - [x] The First Alpha.
-- [ ] First beta: In this beta, the app will have their first release. Includes a better UI and hotfixes.
-- [ ] Performance improvements.
+- [ ] First beta: In this beta, the app will have its first release. Includes a better UI and hotfixes.
 - [ ] Extra Features.
+- [ ] Performance improvements. 
 - [ ] First official release.
 
 ## Licence

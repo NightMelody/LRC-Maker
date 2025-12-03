@@ -1,2 +1,60 @@
 # LRC-Maker
-LRC Maker is an application designed to write LRC files easily
+LRC Maker is an application designed to write LRC files easily.
+
+## Status
+Currently, this is the first alpha of the application.
+May some features can change.
+
+I do NOT recommend to use it for seriously things.
+
+Also, this project will NOT accept contributions until first Beta version be released.
+
+## Technologies
+- [Electron](https://www.electronjs.org/)
+- [Vue 3](https://vuejs.org/)
+- [Vite](https://vite.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [wavesurfer-vue](https://docs-wavesurfer.meersagor.com/)
+
+
+## Building and Developing
+### Requirements
+
+- A desktop computer running Windows, MacOS or Linux.
+- Have Node.js installed.
+- An IDE of your choice, for example: [Visual Studio Code](https://code.visualstudio.com/).
+
+
+## Downloading the source code
+You can download the source code by cloning the repository using git:
+```bash
+git clone https://github.com/NightMelody/LRC-Maker
+cd LRC-Maker
+```
+
+
+## Building
+To run the app in dev mode:
+```bash
+# If is the first time
+npm install
+
+# Run in dev mode
+npm run dev
+```
+
+To build the app:
+```bash
+npm run build
+```
+
+## RoadMap
+- [x] The First Alpha.
+- [ ] First beta: In this beta, the app will have their first release. Includes a better UI and hotfixes.
+- [ ] Performance improvements.
+- [ ] Extra Features.
+- [ ] First official release.
+
+## Licence
+MLR Maker is licensed under [GPL-3.0 license](LICENSE).
+You can do whatever with the code as long you credit me.

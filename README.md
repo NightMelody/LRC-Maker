@@ -3,7 +3,7 @@ LRC Maker is an application designed to write LRC files easily.
 
 ## Status
 Currently, this is the first alpha of the application.
-May some features can change.
+May some features can change in the future.
 
 I do NOT recommend to use it for seriously things.
 

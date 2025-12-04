@@ -1,93 +1,71 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-import fs from "fs/promises";
-createRequire(import.meta.url);
-const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname$1, "..");
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let win;
-function createWindow() {
-  win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+import { app as c, BrowserWindow as f, ipcMain as i, dialog as l } from "electron";
+import { fileURLToPath as m } from "node:url";
+import t from "node:path";
+import u from "fs/promises";
+const p = t.dirname(m(import.meta.url));
+process.env.APP_ROOT = t.join(p, "..");
+const d = process.env.VITE_DEV_SERVER_URL, R = t.join(process.env.APP_ROOT, "dist-electron"), w = t.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = d ? t.join(process.env.APP_ROOT, "public") : w;
+let s;
+function h() {
+  s = new f({
+    icon: t.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs")
+      preload: t.join(p, "preload.mjs")
     }
-  });
-  win.webContents.on("did-finish-load", () => {
-    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  });
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(`${VITE_DEV_SERVER_URL}#/`);
-  } else {
-    win.loadFile(path.join(RENDERER_DIST, "index.html"), { hash: "/" });
-  }
+  }), s.webContents.on("did-finish-load", () => {
+    s == null || s.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  }), d ? s.loadURL(`${d}#/`) : s.loadFile(t.join(w, "index.html"), { hash: "/" });
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    win = null;
-  }
+c.on("window-all-closed", () => {
+  process.platform !== "darwin" && (c.quit(), s = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+c.on("activate", () => {
+  f.getAllWindows().length === 0 && h();
 });
-app.whenReady().then(createWindow);
-ipcMain.handle("open-file-dialog", async (event, filters) => {
-  const dedaultFilters = [
+c.whenReady().then(h);
+i.handle("open-file-dialog", async (a, r) => {
+  const e = f.getFocusedWindow(), n = [
     { name: "All Files", extensions: ["*"] }
-  ];
-  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+  ], o = {
     properties: ["openFile"],
-    filters: Array.isArray(filters) && filters.length > 0 ? filters : dedaultFilters
-  });
-  return result.filePaths;
+    filters: Array.isArray(r) && r.length > 0 ? r : n
+  };
+  return (e ? await l.showOpenDialog(e, o) : await l.showOpenDialog(o)).filePaths;
 });
-ipcMain.handle("save-file-dialog", async (event, defaultName, filters) => {
-  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
-    defaultPath: defaultName || "lyrics.lrc",
-    filters: filters || [
+i.handle("save-file-dialog", async (a, r, e) => {
+  const n = f.getFocusedWindow(), o = {
+    defaultPath: r || "lyrics.lrc",
+    filters: e || [
       { name: "Lyrics File", extensions: ["lrc"] }
     ]
-  });
-  return result.filePath;
+  };
+  return (n ? await l.showSaveDialog(n, o) : await l.showSaveDialog(o)).filePath;
 });
-ipcMain.handle("read-audio-buffer", async (event, filePath) => {
+i.handle("read-audio-buffer", async (a, r) => {
   try {
-    const buffer = await fs.readFile(filePath);
-    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-    console.log("13weqdsa");
-    return { success: true, buffer: arrayBuffer };
-  } catch (error) {
-    console.error("Error at audio read", error);
-    return { success: false, error: error.message };
+    const e = await u.readFile(r);
+    return { success: !0, buffer: e.buffer.slice(e.byteOffset, e.byteOffset + e.byteLength) };
+  } catch (e) {
+    return { success: !1, error: e instanceof Error ? e.message : String(e) };
   }
 });
-ipcMain.handle("read-lyrics-file", async (event, filePath) => {
+i.handle("read-lyrics-file", async (a, r) => {
   try {
-    const content = await fs.readFile(filePath, { encoding: "utf8" });
-    return { success: true, content };
-  } catch (error) {
-    console.error(":c l", error);
-    return { success: false, error: error.message };
+    return { success: !0, content: await u.readFile(r, { encoding: "utf8" }) };
+  } catch (e) {
+    return console.error(":c l", e), { success: !1, error: e instanceof Error ? e.message : String(e) };
   }
 });
-ipcMain.handle("save-lyrics-file", async (event, filePath, contect) => {
+i.handle("save-lyrics-file", async (a, r, e) => {
   try {
-    await fs.writeFile(filePath, contect, "utf-8");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
+    return await u.writeFile(r, e, "utf-8"), { success: !0 };
+  } catch (n) {
+    return { success: !1, error: n instanceof Error ? n.message : String(n) };
   }
 });
 export {
-  MAIN_DIST,
-  RENDERER_DIST,
-  VITE_DEV_SERVER_URL
+  R as MAIN_DIST,
+  w as RENDERER_DIST,
+  d as VITE_DEV_SERVER_URL
 };

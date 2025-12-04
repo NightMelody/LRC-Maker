@@ -24,13 +24,13 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 })
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  openFile: (filtersArray) => ipcRenderer.invoke('open-file-dialog', filtersArray),
-  saveFile: (defautlName, filters) => ipcRenderer.invoke('save-file-dialog', defautlName, filters),
+  openFile: (filtersArray: Electron.FileFilter[]) => ipcRenderer.invoke('open-file-dialog', filtersArray),
+  saveFile: (defautlName: string, filters : Electron.FileFilter[]) => ipcRenderer.invoke('save-file-dialog', defautlName, filters),
 
-  readAudioBuffer: (path) => ipcRenderer.invoke('read-audio-buffer', path),
+  readAudioBuffer: (path: string) => ipcRenderer.invoke('read-audio-buffer', path),
 
-  readLyricsFile: (path) => ipcRenderer.invoke('read-lyrics-file', path),
+  readLyricsFile: (path: string) => ipcRenderer.invoke('read-lyrics-file', path),
 
-  saveLyricsFile: (filePath, content) => ipcRenderer.invoke('save-lyrics-file', filePath, content)
+  saveLyricsFile: (filePath: string, content: string) => ipcRenderer.invoke('save-lyrics-file', filePath, content)
 
 })

@@ -1,12 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import { createRequire } from 'node:module'
+//import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { Extension } from 'typescript'
 import fs from 'fs/promises'
-import { crash } from 'node:process'
 
-const require = createRequire(import.meta.url)
+//const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -50,24 +48,6 @@ function createWindow() {
   }
 }
 
-function createPropertiesWindow() {
-  const propertieWin = new BrowserWindow({
-    width: 700,
-    height: 500,
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
-    },
-  })
-
-  if (VITE_DEV_SERVER_URL) {
-    propertieWin.loadURL(`${VITE_DEV_SERVER_URL}#/properties`)
-  } else {
-    propertieWin.loadFile(path.join(RENDERER_DIST, 'index.html'), {hash: null})
-  }
-
-  return propertieWin
-}
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -89,31 +69,42 @@ app.on('activate', () => {
 
 app.whenReady().then(createWindow)
 
-ipcMain.handle('open-file-dialog', async (event, filters) => {
-  const dedaultFilters = [
+ipcMain.handle('open-file-dialog', async (_event, filters) => {
+  const win = BrowserWindow.getFocusedWindow()
+  const defaultFilters = [
     {name: "All Files", extensions: ['*']}
   ]
-  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+
+  const dialogOptions: Electron.OpenDialogOptions = {
     properties: ['openFile'],
-    filters: Array.isArray(filters) && filters.length > 0 ? filters : dedaultFilters
-  })
+    filters: Array.isArray(filters) && filters.length > 0 ? filters : defaultFilters
+  }
+
+  const result = win
+    ? await dialog.showOpenDialog(win, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions)
 
   return result.filePaths
 })
 
-ipcMain.handle('save-file-dialog', async (event, defaultName, filters) => {
-  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+ipcMain.handle('save-file-dialog', async (_event, defaultName, filters) => {
+  const win = BrowserWindow.getFocusedWindow()
+  const dialogOptions = {
     defaultPath: defaultName || 'lyrics.lrc',
     filters: filters || [
       {name: "Lyrics File", extensions: ['lrc']}
     ]
-  })
+  }
 
+
+  const result = win
+    ? await dialog.showSaveDialog(win, dialogOptions)
+    : await dialog.showSaveDialog(dialogOptions)
   return result.filePath
 })
 
 
-ipcMain.handle('read-audio-buffer', async (event, filePath) => {
+ipcMain.handle('read-audio-buffer', async (_event, filePath) => {
   try {
     const buffer = await fs.readFile(filePath)
 
@@ -123,27 +114,27 @@ ipcMain.handle('read-audio-buffer', async (event, filePath) => {
 
     return {success: true, buffer: arrayBuffer}
   } catch (error) {
-    return {success: false, error: error.message}
+    return {success: false, error: error instanceof Error ? error.message: String(error)}
   }
 })
 
 
-ipcMain.handle('read-lyrics-file', async (event, filePath) => {
+ipcMain.handle('read-lyrics-file', async (_event, filePath) => {
   try {
     const content = await fs.readFile(filePath, {encoding: 'utf8'})
     return {success: true, content: content}
 
   } catch (error) {
     console.error(':c l', error)
-    return {success: false, error: error.message}
+    return {success: false, error: error instanceof Error ? error.message: String(error)}
   }
 })
 
-ipcMain.handle('save-lyrics-file', async (event, filePath, contect) => {
+ipcMain.handle('save-lyrics-file', async (_event, filePath, contect) => {
   try {
     await fs.writeFile(filePath,contect, 'utf-8')
     return {success: true}
   } catch (error) {
-    return {success: false, error: error.message}
+    return {success: false, error: error instanceof Error ? error.message: String(error)}
   }
 })

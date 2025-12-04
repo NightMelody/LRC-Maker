@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { useWaveSurfer, useWaveSurferZoom, useWaveSurferTimeline, useWaveSurferHover, useWaveSurferMinimap } from '@meersagor/wavesurfer-vue';
-import { ref } from 'vue';
+import WaveSurfer from 'wavesurfer.js';
+import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.js';
+import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom.js';
+import HoverPlugin from 'wavesurfer.js/dist/plugins/hover.js';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 type Metadata = {
     ti?: string // Title
@@ -18,12 +21,12 @@ type LyricsLine = {
 type ParsedLyrics = [Metadata, LyricsLine[]]
 const lyricLines = ref<LyricsLine[]>([])
 
-type Marker = {
-    time: number; 
-    label: string; 
-};
-
 const containerRef = ref<HTMLElement | null>(null)
+const waveSurfer = ref<WaveSurfer | null>(null)
+
+const currentTime = ref(0)
+const totalDuration = ref(0)
+const isPlaying = ref(false)
 
 const metadata = ref<Metadata>({
     ti: '',
@@ -36,6 +39,8 @@ const metadata = ref<Metadata>({
 const markers = ref<Array<{time: number, label: string}>>([])
 
 const api = window.electronAPI
+
+
 
 const labelText = ref<String>('')
 
@@ -53,17 +58,50 @@ const options = {
 
         "cursorWidth": 3,
         "cursorColor": '#00a2e8',
-    }
+}
 
-const { waveSurfer, currentTime, totalDuration, isPlaying } = useWaveSurfer({
-    containerRef,
-    options
+onMounted(() => {
+    waveSurfer.value = WaveSurfer.create({
+        container: containerRef.value!,
+        ...options
+    })
+
+    const zoom = ZoomPlugin.create()
+
+    waveSurfer.value?.registerPlugin(zoom)
+
+    const timeline = TimelinePlugin.create({
+        container: '#timeline',
+        insertPosition: 'beforebegin'
+    })
+
+    waveSurfer.value?.registerPlugin(HoverPlugin.create())
+
+    waveSurfer.value?.registerPlugin(timeline)
+
+    waveSurfer.value.on('zoom', () => {
+        // I really don't feel like fixing this
+        //timeline.updateScroll()
+    })
+
+
+
+    waveSurfer.value?.on('audioprocess', (t) => {
+        currentTime.value = t
+    })
+
+    waveSurfer.value?.on('ready', () => {
+        totalDuration.value = waveSurfer.value!.getDuration()
+    })
+
+    waveSurfer.value?.on('play', () => isPlaying.value = true)
+    waveSurfer.value?.on('pause', () => isPlaying.value = false)
 })
 
-const { zoomPlugin } = useWaveSurferZoom({ waveSurfer }) // Ignore Errors
-const { timelinePlugin } = useWaveSurferTimeline({ waveSurfer })  // Ignore Errors
-const { hoverPlugin } = useWaveSurferHover({ waveSurfer })
-// const { minimapPlugin } = useWaveSurferMinimap({ waveSurfer })
+onBeforeUnmount(() => {
+    waveSurfer.value?.destroy()
+})
+
 
 const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -81,7 +119,7 @@ const formatTime = (seconds: number): string => {
 const addMarker = () => {
     const markerLabel = labelText.value.trim() || 'Empty Line'
     markers.value.push({
-        time: waveSurfer.value?.getCurrentTime(),
+        time: waveSurfer.value?.getCurrentTime() ?? 0,
         label: markerLabel
     })
 }
@@ -104,23 +142,13 @@ const audioFilter = [
     {name: 'Audio File', extensions: ['mp3', 'ogg', 'wav', 'flac', 'opus', 'aac']}
 ]
 
-function formatMs(time: number) {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    const ms = Math.floor((time - Math.floor(time)) * 1000);
-
-    return `[${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(3, '0')}]`;
-}
-
-
-
 async function openLyricsFile() {
     const filePaths = await api.openFile(lirycsFilter)
 
     if (!filePaths?.length) return
 
     const { success, content } = await api.readLyricsFile(filePaths[0])
-    if(!success) return alert(result.error)
+    if(!success) return 
 
     const [meta, lines] = parseLrc(content)
 
@@ -152,10 +180,10 @@ async function openAudioFile() {
     const result = await api.readAudioBuffer(audioPath)
 
     if (result.success) {
-        const wavesurferIntance = waveSurfer.value
+        const wavesurferInstance = waveSurfer.value
         const audioBlob = new Blob([result.buffer], {type: 'audio/mp3'})
 
-        wavesurferIntance.loadBlob(audioBlob)
+        wavesurferInstance?.loadBlob(audioBlob)
         //= audioPath
     }
 }
@@ -169,7 +197,7 @@ async function saveLyricsFile() {
 
     const lrcText = buildLrc()
 
-    const result = await api.saveLyricsFile(filePath, lrcText)
+    await api.saveLyricsFile(filePath, lrcText)
 }
 
 
@@ -282,7 +310,11 @@ function buildLrc(): string {
     </nav>
 
     <div>
-        <div class="container" ref="containerRef"></div>
+        <div class="wave-wrapper">
+            <div class="container" ref="containerRef"></div>
+            <!-- <div id="timeline"></div>  Disabled cuz i don't want to fix it now-->
+        </div>
+        
         <div>
             <button @click="waveSurfer?.playPause()">
                 {{ isPlaying ? 'Pause': 'Play' }}
@@ -413,11 +445,23 @@ function buildLrc(): string {
 }
 
 
-.container {
+.wave-wrapper {
     width: 1000px;
     position: relative;
     left: -250px;
     top: 350px;
+}
+
+
+.container {
+    width: 100%;
+}
+
+
+#timeline {
+    /* width: 100%; */
+    height: 40px;
+    
 }
 
 .container2 {

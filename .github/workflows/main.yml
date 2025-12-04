@@ -1,0 +1,38 @@
+name: Build LRC Maker (Alpha builds)
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      # Build app
+      - name: Build Vue app
+        run: npm run build
+
+      # Electron-builder build
+      - name: Build Electron app
+        run: npm run dist -- --linux
+
+      - name: Upload output
+        uses: actions/upload-artifact@v3
+        with:
+          name: "lrc-maker-alpha3-build"
+          path: dist/

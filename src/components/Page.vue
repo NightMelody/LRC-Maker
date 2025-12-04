@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import WaveSurfer from 'wavesurfer.js';
-import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.js';
+//import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.js';
 import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom.js';
 import HoverPlugin from 'wavesurfer.js/dist/plugins/hover.js';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 
 type Metadata = {
     ti?: string // Title
@@ -27,6 +27,9 @@ const waveSurfer = ref<WaveSurfer | null>(null)
 const currentTime = ref(0)
 const totalDuration = ref(0)
 const isPlaying = ref(false)
+
+const formattedcurrentTime = computed(() => formatTime(currentTime.value))
+const formattedtotalDuration = computed(() => formatTime(totalDuration.value))
 
 const metadata = ref<Metadata>({
     ti: '',
@@ -70,14 +73,14 @@ onMounted(() => {
 
     waveSurfer.value?.registerPlugin(zoom)
 
-    const timeline = TimelinePlugin.create({
-        container: '#timeline',
-        insertPosition: 'beforebegin'
-    })
+    // const timeline = TimelinePlugin.create({
+    //     container: '#timeline',
+    //     insertPosition: 'beforebegin'
+    // })
 
     waveSurfer.value?.registerPlugin(HoverPlugin.create())
 
-    waveSurfer.value?.registerPlugin(timeline)
+    //waveSurfer.value?.registerPlugin(timeline)
 
     waveSurfer.value.on('zoom', () => {
         // I really don't feel like fixing this
@@ -104,6 +107,7 @@ onBeforeUnmount(() => {
 
 
 const formatTime = (seconds: number): string => {
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
 
@@ -113,15 +117,23 @@ const formatTime = (seconds: number): string => {
     const formattedSeconds = `0${remainingSeconds}`.slice(-2);
     const formattedMs = `00${ms}`.slice(-3);
 
+    
     return `${formattedMinutes}:${formattedSeconds}.${formattedMs}`
 }
 
 const addMarker = () => {
     const markerLabel = labelText.value.trim() || 'Empty Line'
-    markers.value.push({
-        time: waveSurfer.value?.getCurrentTime() ?? 0,
-        label: markerLabel
-    })
+    const time = waveSurfer.value?.getCurrentTime() ?? 0
+
+    const index = markers.value.findIndex(m => m.time > time)
+
+    if (index === -1) {
+        markers.value.push({time, label: markerLabel})
+    } else {
+        markers.value.splice(index, 0, {time, label: markerLabel})
+    }
+
+    labelText.value = ''
 }
 
 const goToMarker = (t:number) => {
@@ -178,6 +190,7 @@ async function openAudioFile() {
     const audioPath = filePaths[0]
 
     const result = await api.readAudioBuffer(audioPath)
+
 
     if (result.success) {
         const wavesurferInstance = waveSurfer.value
@@ -275,7 +288,6 @@ function buildLrc(): string {
 
     return out
 }
-
 </script>
 
 <template>
@@ -322,8 +334,8 @@ function buildLrc(): string {
             <button @click="addMarker">Add Marker</button>
         </div>
         <div>
-            <p>Current Time: {{ formatTime(currentTime) }}</p>
-            <p>Duration: {{ formatTime(totalDuration) }}</p>
+            <p>Current Time: {{ formattedcurrentTime }}</p>
+            <p>Duration: {{ formattedtotalDuration }}</p>
         </div>
     </div>
 
@@ -332,8 +344,8 @@ function buildLrc(): string {
 
         <div v-for="m,i in markers" :key="i" class="marker-item">
             <div class="marker-info">
-                <strong class="marker-time">{{ formatTime(m.time) }}</strong>
-                <div class="marker-label">{{ m.label }}</div>
+                <strong class="marker-label">{{ m.label }}</strong>
+                <div class="marker-time">{{ formatTime(m.time) }}</div>
             </div>
 
             <button class="btn goto-btn" @click.stop="goToMarker(m.time)">Go to</button>
@@ -457,13 +469,6 @@ function buildLrc(): string {
     width: 100%;
 }
 
-
-#timeline {
-    /* width: 100%; */
-    height: 40px;
-    
-}
-
 .container2 {
     position: absolute;
     left:1020px;
@@ -505,6 +510,11 @@ function buildLrc(): string {
     display: flex;
     align-items: center;
     padding: 0px;
+    font-size: larger;
+}
+
+.marker-time {
+    font-size: medium;
 }
 
 .marker-info {

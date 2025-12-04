@@ -29,11 +29,17 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
+    width: 1280,
+    height: 720,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      devTools: false
     },
   })
+
+  win.setMenuBarVisibility(false)
+  win.setAutoHideMenuBar(true)
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {

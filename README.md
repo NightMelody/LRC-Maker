@@ -57,5 +57,5 @@ npm run build
 - [ ] First official release.
 
 ## Licence
-MLR Maker is licensed under [GPL-3.0 license](LICENSE).  
+LRC Maker is licensed under [GPL-3.0 license](LICENSE).  
 You can do whatever with the code as long as you credit me.

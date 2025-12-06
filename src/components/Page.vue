@@ -1,9 +1,14 @@
 <script setup lang="ts">
+// こんにちは！ I know the code is a little... messy, but I'm gonna fix it in the beta :D
+
 import WaveSurfer from 'wavesurfer.js';
 //import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.js';
 import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom.js';
 import HoverPlugin from 'wavesurfer.js/dist/plugins/hover.js';
 import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
+import WinMGR from './windows-manager/WinMGR.vue';
+import Properties from './Properties.vue';
+import AddMarker from './AddMarker.vue';
 
 type Metadata = {
     ti?: string // Title
@@ -14,8 +19,8 @@ type Metadata = {
 }
 
 type LyricsLine = {
-    time: number //ms
-    lyric: string // I need to explain?
+    time: number
+    lyric: string
 }
 
 type ParsedLyrics = [Metadata, LyricsLine[]]
@@ -30,6 +35,11 @@ const isPlaying = ref(false)
 
 const formattedcurrentTime = computed(() => formatTime(currentTime.value))
 const formattedtotalDuration = computed(() => formatTime(totalDuration.value))
+
+const undoStack = ref<any[]>([])
+const redoStack = ref<any[]>([])
+
+const winmgr = ref<InstanceType<typeof WinMGR> | null>(null)
 
 const metadata = ref<Metadata>({
     ti: '',
@@ -48,7 +58,7 @@ const api = window.electronAPI
 const labelText = ref<String>('')
 
 const options = {
-        "height": 128,
+        "height": 350,
         "waveColor": '#4F4A85',
         "progressColor": '#383351',
         "barWidth": 3,
@@ -83,7 +93,7 @@ onMounted(() => {
     //waveSurfer.value?.registerPlugin(timeline)
 
     waveSurfer.value.on('zoom', () => {
-        // I really don't feel like fixing this
+        // I really don't know ho to fix this lmao
         //timeline.updateScroll()
     })
 
@@ -99,10 +109,20 @@ onMounted(() => {
 
     waveSurfer.value?.on('play', () => isPlaying.value = true)
     waveSurfer.value?.on('pause', () => isPlaying.value = false)
+
+    waveSurfer.value?.on('interaction', (t) => {
+        currentTime.value =t
+    })
+
+
+    window.addEventListener('keydown', handleShortcuts)
+
 })
 
 onBeforeUnmount(() => {
     waveSurfer.value?.destroy()
+
+    window.removeEventListener('keydown', handleShortcuts)
 })
 
 
@@ -121,28 +141,49 @@ const formatTime = (seconds: number): string => {
     return `${formattedMinutes}:${formattedSeconds}.${formattedMs}`
 }
 
-const addMarker = () => {
-    const markerLabel = labelText.value.trim() || 'Empty Line'
-    const time = waveSurfer.value?.getCurrentTime() ?? 0
 
-    const index = markers.value.findIndex(m => m.time > time)
+// I think I can remove the old method?
+const addMarker = (Label?: string) => {
+    if (!Label) {
+        // Old Method
+        pushHistory()
+        const markerLabel = labelText.value.trim() || 'Empty Line'
+        const time = waveSurfer.value?.getCurrentTime() ?? 0
 
-    if (index === -1) {
-        markers.value.push({time, label: markerLabel})
+        const index = markers.value.findIndex(m => m.time > time)
+
+        if (index === -1) {
+            markers.value.push({time, label: markerLabel})
+        } else {
+            markers.value.splice(index, 0, {time, label: markerLabel})
+        }
+
+        labelText.value = ''
     } else {
-        markers.value.splice(index, 0, {time, label: markerLabel})
-    }
+        pushHistory()
+        const markerLabel = (
+            Label ?? labelText.value).trim() || 'Empty Line'
 
-    labelText.value = ''
+        const time = waveSurfer.value?.getCurrentTime() ?? 0
+
+        const index = markers.value.findIndex(m => m.time > time)
+
+        if (index === -1) {
+            markers.value.push({time, label: markerLabel})
+        } else {
+            markers.value.splice(index, 0, {time, label: markerLabel})
+        }
+    }    
 }
 
+// If you will build the app, just comment these const
 const goToMarker = (t:number) => {
     waveSurfer.value?.setTime(t)
 }
 
 const deleteMarker = (i: number) => {
+    pushHistory()
     markers.value.splice(i,1)
-
 }
 
 
@@ -288,9 +329,123 @@ function buildLrc(): string {
 
     return out
 }
+
+
+
+const activeMarkerIndex = computed(() => {
+    const t = currentTime.value
+    let idx = -1
+
+    for (let i = 0; i < markers.value.length; i++) {
+        if (markers.value[i].time <= t) {
+            idx = i
+        } else {
+            break
+        }
+    }
+    return idx
+})
+
+
+
+function pushHistory() {
+    undoStack.value.push({
+        markers: JSON.parse(JSON.stringify(markers.value)),
+        metadata: JSON.parse(JSON.stringify(metadata.value))
+    })
+
+    redoStack.value = []
+}
+
+function handleShortcuts(e: KeyboardEvent) {
+    const target = e.target as HTMLElement
+
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return
+    }
+
+
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault()
+        undo()
+        return
+    }
+
+    if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault()
+        redo()
+        return
+    }
+}
+
+function undo() {
+    if (undoStack.value.length === 0) return
+
+    const prev = undoStack.value.pop()
+
+    redoStack.value.push({
+        markers: JSON.parse(JSON.stringify(markers.value)),
+        metadata: JSON.stringify(metadata.value)
+    })
+
+    markers.value = prev.markers
+    metadata.value = prev.metadata
+}
+
+function redo() {
+    if (redoStack.value.length === 0) return
+    const next = redoStack.value.pop()
+
+    undoStack.value.push({
+        markers: JSON.parse(JSON.stringify(markers.value)),
+        metadata: JSON.parse(JSON.stringify(metadata.value))
+    })
+
+    markers.value = next.markers
+    metadata.value = next.metadata
+
+
+
+}
+
+function openAddModel () {
+    winmgr.value?.openWindow({
+        id: 'add-marker',
+        title: 'Add Marker',
+        x: 200,
+        y: 100,
+        width: 600,
+        height: 200,
+        component: AddMarker,
+        props: {
+            label: labelText.value,
+            onOk: (value: string) => {
+                addMarker(value)
+            },
+            onCancel: () => {
+                winmgr.value?.closeWindow('add-marker')
+            }
+        }
+    })
+}
+
+function openMetadata() {
+    winmgr.value?.openWindow({
+    id: 'metadata-editor',
+    title: 'Edit Metadata',
+    x: 450,
+    y: 120,
+    width: 600,
+    height: 460,
+    component: Properties,
+    props: {
+        metadata: metadata.value
+    }
+})}
 </script>
 
 <template>
+    <WinMGR ref="winmgr" />
     <nav class="toolbar">
         <div class="menu-item">
             File
@@ -299,7 +454,7 @@ function buildLrc(): string {
                 <li><button @click="saveLyricsFile">Save</button></li>
                 <li class="separator"></li>
                 <li><button @click="openAudioFile">Load audio</button></li>
-                <!-- <li><button>Properties</button></li> -->
+                <li><button @click="openMetadata">Properties</button></li>
                 <!-- <li><button @click="stopApp">Exit</button></li> -->
             </ul>
         </div>
@@ -307,103 +462,81 @@ function buildLrc(): string {
         <div class="menu-item">
             Edit
             <ul class="dropdown">
-                <li><button>Undo</button></li>
-                <li><button>Redo</button></li>
+                <li><button @click="undo">Undo</button></li>
+                <li><button @click="redo">Redo</button></li>
             </ul>
         </div>
 
         <div class="menu-item">
-            View
+            Help
             <ul class="dropdown">
-                <li><button>Waveform</button></li>
-                <li><button>Redo</button></li>
+                <li><button>Help</button></li>
+                <!-- <li><button>Redo</button></li> -->
             </ul>
         </div>
     </nav>
 
-    <div>
-        <div class="wave-wrapper">
-            <div class="container" ref="containerRef"></div>
-            <!-- <div id="timeline"></div>  Disabled cuz i don't want to fix it now-->
-        </div>
+
+    <div class="main-layout">
+        <div class="left-panel">
+            <div class="write-line">
+                <input type="text" v-model="labelText" placeholder="Write Line"></input>
+                <button @click="addMarker()">Add Marker</button>
+            </div>
         
-        <div>
-            <button @click="waveSurfer?.playPause()">
-                {{ isPlaying ? 'Pause': 'Play' }}
-            </button>
-            <button @click="addMarker">Add Marker</button>
-        </div>
-        <div>
-            <p>Current Time: {{ formattedcurrentTime }}</p>
-            <p>Duration: {{ formattedtotalDuration }}</p>
-        </div>
-    </div>
 
-    <div class="container2">
-        <h3>Time Markers</h3>
-
-        <div v-for="m,i in markers" :key="i" class="marker-item">
-            <div class="marker-info">
-                <strong class="marker-label">{{ m.label }}</strong>
-                <div class="marker-time">{{ formatTime(m.time) }}</div>
+            <div class='waveform'>
+                <div class="container" ref="containerRef"></div>
             </div>
 
-            <button class="btn goto-btn" @click.stop="goToMarker(m.time)">Go to</button>
-            
-            
-            <button class="del-btn" @click.stop="deleteMarker(i)">Del</button>
+            <div class="controls">
+                <button @click="waveSurfer?.playPause()">
+                    {{ isPlaying ? 'Pause': 'Play' }}
+                </button>
+
+                <span>{{ formattedcurrentTime }} /  </span>
+                <span>{{ formattedtotalDuration }}</span>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="marker-header">
+                <!-- @click="showAddModal" -->
+                <button class="add-marker-btn" @click="openAddModel()">+</button>
+            </div>
+
+            <div class="marker-list">
+                <div v-for="m,i in markers" :key="i" :class="{active: i === activeMarkerIndex}" class="marker-row" >
+                    <input v-model="m.label" class="marker-input" />
+                    <span class="marker-time">{{ formatTime(m.time) }}</span>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Add Marker -->
 
+    <!-- Metadata -->
 
-    <div class="container3">
-        <h3>Write Line</h3>
-
-        <input type="text" style="font-size: 32px;" placeholder="Write Text" v-model="labelText"></input>
-    </div>
-
-    <!-- This -->
-    <div class="container4">
-        <h3>Metadata</h3>
-
-        <h5>Title</h5>
-        <input v-model="metadata.ti"></input>
-
-        <h5>Artist</h5>
-        <input v-model="metadata.ar"></input>
-
-        <h5>Album</h5>
-        <input v-model="metadata.al"></input>
-
-        <h5>Author</h5>
-        <input v-model="metadata.au"></input>
-
-        <h5>By</h5>
-        <input v-model="metadata.by"></input>
-    </div>
 </template>
 
 <style lang="css">
+/* Toolbar Layout */
 .toolbar {
     display: flex;
     background-color: #2e2e2e;
     padding: 0;
-    margin: 0;
+    height: 28px;
     user-select: none;
-    position: absolute;
-    top: 0;
-    left: 0;
     z-index: 1000;
     border-bottom: 1px solid #444;
-
-    width: 100%;
+    color: #eee;
 }
 
 .menu-item {
     position: relative;
     color: #f0f0f0;
-    padding: 0px 12px; 
+    padding: 3px 12px; 
     cursor: default;
     transition: background-color 0.2s;
 }
@@ -413,40 +546,33 @@ function buildLrc(): string {
 }
 
 .dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    list-style: none;
-    padding: 5px 0;
-    margin: 0;
-    background-color: #3e3e3e;
-    border: 1px solid #555;
-    min-width: 150px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     display: none;
+    position: absolute;
+    top: 46%;
+    left: 0;
+    padding: 0;
+    background: #3a3a3a;
+    border: 1px solid #555;
+    min-width: 100px;
+    list-style: none;
+    z-index: 100;
 }
 
 .menu-item:hover > .dropdown {
     display: block;
 }
 
-.dropdown li {
-    padding: 0;
-}
-
 .dropdown li button {
     width: 100%;
-    text-align: left;
+    padding: 6px 12px;
     background: none;
     border: none;
-    color: #f0f0f0;
-    padding: 6px 15px;
-    cursor: pointer;
-    white-space: nowrap;
+    color: #fff;
+    text-align: left;
 }
 
 .dropdown li button:hover {
-    background-color: #4F4A85;
+    background: #555;
 }
 
 /* Separador */
@@ -456,81 +582,121 @@ function buildLrc(): string {
     margin: 5px 0;
 }
 
-
-.wave-wrapper {
-    width: 1000px;
-    position: relative;
-    left: -250px;
-    top: 350px;
+/* Main Layout */
+.main-layout {
+    display: flex;
+    height: calc(100vh - 30px);
 }
 
 
-.container {
-    width: 100%;
+.left-panel {
+    flex: 1;
+    padding: 20px;
 }
 
-.container2 {
-    position: absolute;
-    left:1020px;
-    top: 500px;
-    background-color: gray;
-    max-height: 35vh;
-    height: 35vh;
-    width: 500px;
+.write-line {
+    display: flex;
+    gap: 30px;
+}
 
+.write-line input {
+    flex: 1;
+    padding: 8px;
+    background: #2e2e2e;
+    border: 1px solid #555;
+    color: #FFF;
+    min-width: 1px;
+}
+
+.write-line button {
+    padding: 6px 14px;
+    background: #2e2e2e;
+    color: white;
+    border: 1px solid #222;
+}
+
+.waveform {
+    margin-top: 48px;
+    height: 350px;
+    background: #0001;
+    border: 1px solid #444;
+    max-width: 95vw;
+}
+
+.controls {
+    margin-top: 22px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.controls button {
+    padding: 6px 14px;
+    background: #2e2e2e;
+    color: white;
+    border: 1px solid #222;
+}
+
+.right-panel {
+    width: 350px;
+    background: #3a3a3a;
+    border-left: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+}
+
+.marker-header {
+    padding: 10px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.add-marker-btn {
+    background: #2e2e2e;
+    border: 1px solid #222;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.marker-list {
     overflow-y: auto;
-    overflow-x: hidden;
+    padding: 10px;
 }
 
-.container3 {
-    position: absolute;
-    left: 20px;
-    top: 100px;
-}
-
-.container4 {
-    position: absolute;
-    left: 1200px;
-    top: 10px;
-}
-
-.marker-item {
+.marker-row {
     display: flex;
-
-    align-items: center;
-
     justify-content: space-between;
-    padding: 10px; 
+    background: #2e2e2e;
+    padding: 6px;
     margin-bottom: 8px;
-    border-radius: 6px; 
-    background: #333;
+    border-radius: 4px;
 }
 
-.marker-label {
-    display: flex;
-    align-items: center;
-    padding: 0px;
-    font-size: larger;
+.marker-input {
+    width: 65%;
+    background: #2e2e2e;
+    border: 0px solid #555;
+    color: white;
+    padding: 4px;
 }
 
 .marker-time {
-    font-size: medium;
+    color: #fff;
+    font-size: 14px;
 }
 
-.marker-info {
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: flex-start;
-
-    flex-grow: 1;
-
-    margin-right: 15px;
+/* Window */
+.window-content {
+    background: #2e2e2e;
+    padding: 10px;
+    height: 100%;
+    box-sizing: border-box;
 }
 
-.del-btn {
-    background: red;
-    border-color: black;
+/* Metadata */
+.metadata-window {
+    color: #FFF;
+    
 }
 </style>

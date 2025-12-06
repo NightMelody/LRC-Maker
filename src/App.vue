@@ -4,6 +4,7 @@ import Page from './components/Page.vue';
 
 <template>
   <Page />
+  
 </template>
 
 <style scoped>

@@ -9,7 +9,6 @@ const props = defineProps({
 
 <template>
     <div class="metadata-window">
-        <h3>Edit Metadata</h3>
 
         <label>Title</label>
         <input v-model="metadata.ti" class="modal-input" />

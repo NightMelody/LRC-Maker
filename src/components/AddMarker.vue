@@ -14,7 +14,7 @@ import { ref } from 'vue';
 
 <template>
     <div class="modal">
-        <h3>Add Marker</h3>
+        <label>Add Marker</label>
 
         <input v-model="labelText" class="modal-input" />
 

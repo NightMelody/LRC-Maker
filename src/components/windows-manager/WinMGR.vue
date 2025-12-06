@@ -18,7 +18,7 @@ const openWindow = (params: Partial<WindowState>) => {
         title: params.title ?? 'New Window',
         x: params.x ?? 100,
         y: params.y ?? 100,
-        width: params.height ?? 300,
+        width: params.width ?? 300,
         height: params.height ?? 200,
         zIndex: highestZIndex.value + 1,
         component: params.component,

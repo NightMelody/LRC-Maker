@@ -92,6 +92,8 @@ const closeWindow = () => {
 
 
 <style scoped lang="css">
+@import './windowStyles';
+
 .window {
     position: absolute;
     background: #f0f0f0;
@@ -139,4 +141,6 @@ const closeWindow = () => {
 .close-btn:hover {
   background: darkred;
 }
+
+
 </style>

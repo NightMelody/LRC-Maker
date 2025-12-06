@@ -59,8 +59,8 @@ const labelText = ref<String>('')
 
 const options = {
         "height": 350,
-        "waveColor": '#4F4A85',
-        "progressColor": '#383351',
+        "waveColor": '#9900D1',
+        "progressColor": '#7800A3',
         "barWidth": 3,
         "barGap": 2,
         "barRadius": 4,
@@ -69,8 +69,8 @@ const options = {
         
         //"url": '/NEVER - Neuro x Evil.ogg',
 
-        "cursorWidth": 3,
-        "cursorColor": '#00a2e8',
+        "cursorWidth": 2,
+        "cursorColor": '#C21CFF',
 }
 
 onMounted(() => {
@@ -279,7 +279,6 @@ function parseLrc(lrcText: string): ParsedLyrics {
             continue
         }
 
-        //const lineMatch = trimmedLine.match(lineRegex)
         if (timeTagRegex.test(trimmedLine)) {
             const timeMatches = trimmedLine.matchAll(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/g);
 
@@ -376,6 +375,16 @@ function handleShortcuts(e: KeyboardEvent) {
         redo()
         return
     }
+
+    if (e.code === 'Space') {
+        e.preventDefault()
+        play()
+        return
+    }
+}
+
+function play() {
+    waveSurfer.value?.playPause()
 }
 
 function undo() {
@@ -403,9 +412,6 @@ function redo() {
 
     markers.value = next.markers
     metadata.value = next.metadata
-
-
-
 }
 
 function openAddModel () {
@@ -414,7 +420,7 @@ function openAddModel () {
         title: 'Add Marker',
         x: 200,
         y: 100,
-        width: 600,
+        width: 500,
         height: 200,
         component: AddMarker,
         props: {
@@ -432,7 +438,7 @@ function openAddModel () {
 function openMetadata() {
     winmgr.value?.openWindow({
     id: 'metadata-editor',
-    title: 'Edit Metadata',
+    title: 'Metadata',
     x: 450,
     y: 120,
     width: 600,
@@ -513,36 +519,50 @@ function openMetadata() {
             </div>
         </div>
     </div>
-
-    <!-- Add Marker -->
-
-    <!-- Metadata -->
-
 </template>
 
 <style lang="css">
 /* Toolbar Layout */
+
+
+body {
+    background: #260536;
+}
+
+button {
+    border-radius: 5px;
+}
+
+input {
+    border-radius: 5px;
+}
+
+input:focus {
+    outline: none;
+}
+
+
 .toolbar {
     display: flex;
-    background-color: #2e2e2e;
+    background: linear-gradient(45deg, #260536, #751199);
     padding: 0;
     height: 28px;
     user-select: none;
     z-index: 1000;
-    border-bottom: 1px solid #444;
-    color: #eee;
+    border-bottom: 1px solid #C21CFF;
+    color: #D570FF;
 }
 
 .menu-item {
     position: relative;
-    color: #f0f0f0;
+    color: #D570FF;
     padding: 3px 12px; 
     cursor: default;
     transition: background-color 0.2s;
 }
 
 .menu-item:hover {
-    background-color: #3a3a3a;
+    background-color: #22052f;
 }
 
 .dropdown {
@@ -551,11 +571,12 @@ function openMetadata() {
     top: 46%;
     left: 0;
     padding: 0;
-    background: #3a3a3a;
-    border: 1px solid #555;
+    background: linear-gradient(#22052f, #751199);
+    border: 1px solid #C21CFF;
     min-width: 100px;
     list-style: none;
     z-index: 100;
+    border-radius: 5px;
 }
 
 .menu-item:hover > .dropdown {
@@ -567,18 +588,18 @@ function openMetadata() {
     padding: 6px 12px;
     background: none;
     border: none;
-    color: #fff;
+    color: #D570FF;
     text-align: left;
 }
 
 .dropdown li button:hover {
-    background: #555;
+    background: #751199;
 }
 
 /* Separador */
 .dropdown .separator {
     height: 1px;
-    background-color: #555;
+    background-color: #C21CFFaa;
     margin: 5px 0;
 }
 
@@ -602,25 +623,32 @@ function openMetadata() {
 .write-line input {
     flex: 1;
     padding: 8px;
-    background: #2e2e2e;
-    border: 1px solid #555;
-    color: #FFF;
+    background: linear-gradient(45deg ,#260536, #751199);
+    border: 1px solid #C21CFF;
+    color: #D570FF;
     min-width: 1px;
+    font-size: large;
+}
+
+input::placeholder {
+    color: #D570FF;
+    opacity: 0.5;
 }
 
 .write-line button {
     padding: 6px 14px;
-    background: #2e2e2e;
-    color: white;
-    border: 1px solid #222;
+    background: linear-gradient(100deg ,#260536, #751199);
+    color: #D570FF;
+    border: 1px solid #C21CFF;
 }
 
 .waveform {
     margin-top: 48px;
     height: 350px;
     background: #0001;
-    border: 1px solid #444;
-    max-width: 95vw;
+    border: 1px solid #C21CFF;
+    max-width: 1140px;
+    border-radius: 5px;
 }
 
 .controls {
@@ -628,19 +656,20 @@ function openMetadata() {
     display: flex;
     gap: 4px;
     align-items: center;
+    color: #D570FF;
 }
 
 .controls button {
     padding: 6px 14px;
-    background: #2e2e2e;
-    color: white;
-    border: 1px solid #222;
+    background: linear-gradient(90deg ,#260536, #751199);
+    color: #D570FF;
+    border: 1px solid #C21CFF;
 }
 
 .right-panel {
     width: 350px;
-    background: #3a3a3a;
-    border-left: 1px solid #444;
+    background: #260536;
+    border-left: 1px solid #C21CFF;
     display: flex;
     flex-direction: column;
 }
@@ -652,11 +681,11 @@ function openMetadata() {
 }
 
 .add-marker-btn {
-    background: #2e2e2e;
-    border: 1px solid #222;
-    color: white;
+    background: linear-gradient(45deg ,#260536, #751199);
+    border: 1px solid #C21CFF;
+    color: #D570FF;
     padding: 6px 10px;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
 .marker-list {
@@ -667,36 +696,104 @@ function openMetadata() {
 .marker-row {
     display: flex;
     justify-content: space-between;
-    background: #2e2e2e;
+    background: linear-gradient(45deg ,#260536, #751199);
     padding: 6px;
     margin-bottom: 8px;
-    border-radius: 4px;
+    border-radius: 5px;
+    border: 1px solid #C21CFF;
 }
 
 .marker-input {
     width: 65%;
-    background: #2e2e2e;
+    background: #2e2e2e00;
     border: 0px solid #555;
-    color: white;
+    color: #D570FF;
     padding: 4px;
 }
 
 .marker-time {
-    color: #fff;
+    color: #D570FF;
     font-size: 14px;
 }
 
 /* Window */
+
+.window-header {
+    background: #751199;
+    overflow-y: hidden !important;
+}
 .window-content {
-    background: #2e2e2e;
+    background: linear-gradient(90deg ,#260536, #751199);
     padding: 10px;
     height: 100%;
     box-sizing: border-box;
+    
 }
 
 /* Metadata */
 .metadata-window {
-    color: #FFF;
+    color: #D570FF;
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 8px;
+}
+
+.metadata-window label {
+    font-size: large;
+    font-weight: bold;
+}
+
+.metadata-window input {
+    flex: 1;
+    padding: 8px;
+    background: linear-gradient(90deg ,#260536, #751199);
+    border: 2px solid #260536;
+    border-bottom: 2px solid #C21CFF;
+    color: #D570FF;
+    min-width: 1px;
+    font-size: large;
+}
+
+/* Add Marker */
+.modal {
+    color: #D570FF;
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 20px;
     
+}
+
+.modal label {
+    font-size: large;
+    font-weight: bold;
+}
+
+.modal input {
+    flex: 1;
+    padding: 8px;
+    background: linear-gradient(90deg ,#260536, #751199);
+    border: 2px solid #260536;
+    border-bottom: 2px solid #C21CFF;
+    color: #D570FF;
+    min-width: 1px;
+    font-size: large;
+    
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    
+}
+
+.modal button {
+    padding: 6px 14px;
+    background: linear-gradient(100deg ,#260536, #751199);
+    color: #D570FF;
+    border: 1px solid #C21CFF;
+    width: 100px;
 }
 </style>

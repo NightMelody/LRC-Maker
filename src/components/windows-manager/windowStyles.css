@@ -1,0 +1,24 @@
+.window-header {
+    background: linear-gradient(90deg ,#260536, #751199) !important;
+    color: #D570FF !important;
+    font-weight: bolder;
+}
+
+.close-btn {
+    background: transparent !important;
+    color: #D570FF !important;
+    margin-left: 0px !important;
+}
+
+.window-title {
+    flex-grow: 0 !important;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.window {
+    border: 1px solid #C21CFF !important;
+    border-radius: 5px;
+    overflow: hidden;
+}

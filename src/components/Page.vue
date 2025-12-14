@@ -41,6 +41,12 @@ const redoStack = ref<any[]>([])
 
 const winmgr = ref<InstanceType<typeof WinMGR> | null>(null)
 
+const showContext = ref(false)
+const contextX = ref(0)
+const contextY = ref(0)
+
+const contextMarkerIndex = ref<number | null>(null)
+
 const metadata = ref<Metadata>({
     ti: '',
     ar: '',
@@ -139,6 +145,23 @@ const formatTime = (seconds: number): string => {
 
     
     return `${formattedMinutes}:${formattedSeconds}.${formattedMs}`
+}
+
+const goToTimeContext = () => {
+    if (contextMarkerIndex.value === null) return
+
+    const marker = markers.value[contextMarkerIndex.value]
+    goToMarker(marker.time)
+
+    showContext.value = false
+}
+
+const deleteMarkerContext = () => {
+    if (contextMarkerIndex.value === null) return
+
+    deleteMarker(contextMarkerIndex.value)
+    showContext.value = false
+    contextMarkerIndex.value = null
 }
 
 
@@ -519,10 +542,57 @@ function openMetadata() {
             </div>
         </div>
     </div>
+
+    <div class="context-menu"
+    v-if="showContext"
+    :style="{ top: contextY + 'px', left: contextX + 'px'}"
+    >
+        <ul class="markers-context-window">
+            <li><button @click.stop="goToTimeContext">Go to time</button></li>
+            <li class="separator-1"></li>
+            <li><button class="delete-btn" @click.stop="deleteMarkerContext">Delete</button></li>
+        </ul>
+    </div>
 </template>
 
 <style lang="css">
 /* Toolbar Layout */
+
+
+.context-menu {
+    position: fixed;
+    z-index: 9999;
+    background: linear-gradient(#22052f, #751199);
+    border: 1px solid #C21CFF;
+    border-radius: 5px;
+    padding: 0px;
+}
+
+.markers-context-window {
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    list-style: none;
+}
+
+.markers-context-window button {
+    background: transparent;
+    border: 0px solid transparent;
+    color: #D570FF;
+    font-weight: bold;
+    font-size: large;
+}
+
+.context-menu:hover {
+    background-color: #22052f;
+}
+
+.context-menu .separator-1 {
+    height: 1px;
+    background-color: #C21CFF;
+    margin: 5px 0;
+}
 
 
 body {

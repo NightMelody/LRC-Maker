@@ -35,17 +35,13 @@ cd LRC-Maker
 ## Building
 To run the app in dev mode:
 ```bash
-# If is the first time
 npm install
-npm install --save wavesurfer.js
 
-# Run in dev mode
 npm run dev
 ```
 
 To build the app:
 ```bash
-# Not tested
 npm run build
 ```
 
